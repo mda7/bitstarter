@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /*
 Automatically grade files for the presence of specified HTML tags/attributes.
 Uses commander.js and cheerio. Teaches command line application development
@@ -24,9 +25,42 @@ References:
 var fs = require('fs');
 var program = require('commander');
 var cheerio = require('cheerio');
+
+//MD
+var rest = require('restler');
+var URLFILE_DEFAULT = "urlindex.html";
+var URLPATH_DEFAULT = "http://mighty-cove-4903.herokuapp.com";
+//*****************************
+
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
 
+
+                                                                              
+var getURL = function(url)
+{
+
+
+  rest.get(url).on('complete', function(result)
+   {
+    if (result instanceof Error)
+     {
+      console.error('Error: ' + result.message);
+       process.exit(1);
+    
+     }
+     else
+     {
+      fs.writeFileSync(URLFILE_DEFAULT, result);
+	 //console.log("File Written: " + URLFILE_DEFAULT);
+        var checkJson2 = checkHtmlFile(URLFILE_DEFAULT, program.checks);
+        var outJson2 = JSON.stringify(checkJson2, null, 4);
+        console.log(outJson2);
+     }                                                                                       
+  });
+
+};
+				   
 var assertFileExists = function(infile) {
     var instr = infile.toString();
     if(!fs.existsSync(instr)) {
@@ -65,10 +99,31 @@ if(require.main == module) {
     program
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
+        .option('-u, --url <url_path>', 'Path to url', clone(getURL), URLPATH_DEFAULT)
+
         .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
-    var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+     
+    //console.log("args are: " + process.argv);
+
+
+    var temp = process.argv;
+    var foundURL = false;
+    for (var i = 0; i < temp.length; i++)
+    {
+	if ((temp[i] == '-u') || (temp[i] == '--url') ) 
+	    {
+		//console.log('U is present');
+		foundURL = true;
+	    }
+    }
+
+    if (false == foundURL)
+    {
+
+	var checkJson = checkHtmlFile(program.file, program.checks);
+	var outJson = JSON.stringify(checkJson, null, 4);
+	console.log(outJson);
+    }
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
